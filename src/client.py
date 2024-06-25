@@ -1,33 +1,29 @@
 import requests
-from sklearn import datasets
-import numpy as np
 
+# URL of the FastAPI server
+SERVER_URL = "http://localhost:8000"  # Replace with your server's URL if different
 
-def load_correct_results():
-    return np.load("correct_output.npy")
+# Function to send a POST request with an image file to the server
+def predict_objects(image_file):
+    try:
+        # Open the image file in binary mode
+        with open(image_file, "rb") as file:
+            files = {"image": file}
+            response = requests.post(f"{SERVER_URL}/predict/", files=files)
+            if response.status_code == 200:
+                # Save the returned image response
+                with open("annotated_image.jpg", "wb") as output_file:
+                    output_file.write(response.content)
+                print("Tests pass!")
+                print("Prediction result saved as annotated_image.jpg")
+            else:
+                print("Tests failed!")
+                print(f"Request failed with status code {response.status_code}")
+                print(response.json())  # Print error message if available
 
+    except Exception as e:
+        print(f"Error occurred: {str(e)}")
 
-def load_data():
-    iris = datasets.load_iris()
-    x = iris.data
-    x_true = load_correct_results()
-    return x, x_true
-
-
-def main():
-    x, x_true = load_data()
-    results = []
-    for sample in x:
-        serialized = sample.tolist()
-        response = requests.get("http://localhost:8000/predict", json=serialized)
-        results.append(response.json())
-    results = np.array(results)
-    correct = np.allclose(results, x_true)
-    if correct:
-        print("Tests pass!")
-    else:
-        print("Tests failed!")
-
-
-if __name__=="__main__":
-    main()
+# Example usage
+if __name__ == "__main__":
+    predict_objects("./test.jpeg")
